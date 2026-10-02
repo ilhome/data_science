@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+
+# Project artifacts
+*.parquet
+*.csv
+!data/raw/*.csv
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Test and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Docker/local data
+postgres_data/

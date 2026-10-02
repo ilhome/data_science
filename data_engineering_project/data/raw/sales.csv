@@ -1,0 +1,9 @@
+order_id,order_date,customer_id,product,quantity,unit_price
+A-100,2024-01-01,C1,Laptop,2,1200
+A-101,2024-01-01,C2,Mouse,3,25
+A-102,2024-01-02,C1,Monitor,1,300
+A-103,2024-01-02,C3,Keyboard,4,80
+A-104,2024-01-03,C4,Chair,2,150
+A-105,invalid,C5,Desk,1,200
+A-106,2024-01-04,C6,USB Hub,0,15
+A-107,2024-01-04,C7,Webcam,1,90
