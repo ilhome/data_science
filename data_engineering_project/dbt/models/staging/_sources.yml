@@ -1,0 +1,33 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Landing tables written by the Python ETL (`data_engineering_project.pipeline --load`).
+    schema: raw
+    loaded_at_field: loaded_at
+    freshness:
+      warn_after: {count: 26, period: hour}
+      error_after: {count: 50, period: hour}
+    tables:
+      - name: sales
+        description: Validated order lines, one row per (order_id, product).
+        data_tests:
+          - unique_combination:
+              arguments:
+                columns: [order_id, product]
+      - name: sales_rejected
+        description: Raw rows quarantined by the ETL with the reason they failed validation.
+        columns:
+          - name: rejection_reason
+            data_tests:
+              - not_null
+              - accepted_values:
+                  arguments:
+                    values:
+                      - missing_order_id
+                      - missing_customer_id
+                      - missing_product
+                      - invalid_order_date
+                      - invalid_quantity
+                      - invalid_unit_price
+                      - duplicate_record

@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: daily_sales_metrics
+    description: Daily KPIs for every calendar day (zero-filled), with a 7-day revenue average.
+    columns:
+      - name: date_day
+        data_tests: [unique, not_null]
+
+  - name: monthly_category_revenue
+    description: Revenue by month and product category, with share of month and MoM growth.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [month, category]
+
+  - name: customer_retention_cohorts
+    description: Monthly acquisition cohorts and their retention over time.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [cohort_month, months_since_first_order]

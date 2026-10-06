@@ -1,0 +1,75 @@
+name: data-engineering-project
+
+on:
+  push:
+    paths:
+      - "data_engineering_project/**"
+      - ".github/workflows/data-engineering-project.yml"
+  pull_request:
+    paths:
+      - "data_engineering_project/**"
+      - ".github/workflows/data-engineering-project.yml"
+
+defaults:
+  run:
+    working-directory: data_engineering_project
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: retail_data
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: retail_data
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: data_engineering_project/requirements*.txt
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements-dev.txt
+          pip install -e .
+
+      - name: Lint
+        run: |
+          ruff check src tests airflow
+          ruff format --check src tests airflow
+
+      - name: Unit tests
+        run: pytest -q
+
+      - name: Create warehouse schema
+        run: psql -h localhost -U postgres -d retail_data -v ON_ERROR_STOP=1 -f sql/init.sql
+        env:
+          PGPASSWORD: postgres
+
+      - name: Run ETL and load raw layer
+        run: python -m data_engineering_project.pipeline --load
+
+      - name: dbt build (models + data tests)
+        run: dbt build --project-dir dbt --profiles-dir dbt
+
+      - name: dbt build again (incremental run must stay green)
+        run: dbt build --project-dir dbt --profiles-dir dbt

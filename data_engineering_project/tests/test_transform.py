@@ -1,37 +1,23 @@
 from __future__ import annotations
 
 import pandas as pd
+import pytest
+from conftest import make_row
 
-from data_engineering_project.etl import build_daily_metrics, clean_sales_data
+from data_engineering_project.etl import (
+    build_daily_metrics,
+    clean_sales_data,
+    split_sales_records,
+    validate_data_quality,
+)
 
 
 def test_clean_sales_data_removes_invalid_rows() -> None:
     sales = pd.DataFrame(
         [
-            {
-                "order_id": "A-100",
-                "order_date": "2024-01-01",
-                "customer_id": "C1",
-                "product": "Laptop",
-                "quantity": 2,
-                "unit_price": 1200,
-            },
-            {
-                "order_id": "A-101",
-                "order_date": "2024-01-01",
-                "customer_id": "C2",
-                "product": "Mouse",
-                "quantity": 0,
-                "unit_price": 50,
-            },
-            {
-                "order_id": "A-102",
-                "order_date": "bad-date",
-                "customer_id": "C3",
-                "product": "Keyboard",
-                "quantity": 1,
-                "unit_price": 80,
-            },
+            make_row(order_id="A-100", quantity=2, unit_price=1200),
+            make_row(order_id="A-101", product="Mouse", quantity=0, unit_price=50),
+            make_row(order_id="A-102", order_date="bad-date", product="Keyboard"),
         ]
     )
 
@@ -42,40 +28,82 @@ def test_clean_sales_data_removes_invalid_rows() -> None:
     assert cleaned["order_date"].notna().all()
 
 
-def test_build_daily_metrics_aggregates_revenue() -> None:
-    sales = pd.DataFrame(
-        [
-            {
-                "order_id": "A-100",
-                "order_date": pd.Timestamp("2024-01-01"),
-                "customer_id": "C1",
-                "product": "Laptop",
-                "quantity": 1,
-                "unit_price": 1000,
-                "total_amount": 1000.0,
-            },
-            {
-                "order_id": "A-101",
-                "order_date": pd.Timestamp("2024-01-01"),
-                "customer_id": "C2",
-                "product": "Mouse",
-                "quantity": 2,
-                "unit_price": 25,
-                "total_amount": 50.0,
-            },
-            {
-                "order_id": "A-102",
-                "order_date": pd.Timestamp("2024-01-02"),
-                "customer_id": "C1",
-                "product": "Monitor",
-                "quantity": 1,
-                "unit_price": 300,
-                "total_amount": 300.0,
-            },
-        ]
-    )
+@pytest.mark.parametrize(
+    "overrides, reason",
+    [
+        ({"order_id": ""}, "missing_order_id"),
+        ({"customer_id": "   "}, "missing_customer_id"),
+        ({"product": ""}, "missing_product"),
+        ({"order_date": "2024-13-45"}, "invalid_order_date"),
+        ({"order_date": "not-a-date"}, "invalid_order_date"),
+        ({"quantity": "0"}, "invalid_quantity"),
+        ({"quantity": "-1"}, "invalid_quantity"),
+        ({"quantity": "1.5"}, "invalid_quantity"),
+        ({"quantity": "abc"}, "invalid_quantity"),
+        ({"unit_price": "N/A"}, "invalid_unit_price"),
+        ({"unit_price": "-5"}, "invalid_unit_price"),
+    ],
+)
+def test_split_sales_records_tags_rejection_reason(overrides, reason) -> None:
+    valid, rejected = split_sales_records(pd.DataFrame([make_row(**overrides)]))
 
-    metrics = build_daily_metrics(sales)
+    assert valid.empty
+    assert rejected["rejection_reason"].tolist() == [reason]
 
-    assert metrics["total_orders"].tolist() == [2, 1]
-    assert metrics["total_revenue"].tolist() == [1050.0, 300.0]
+
+def test_rejected_rows_keep_original_raw_values() -> None:
+    _, rejected = split_sales_records(pd.DataFrame([make_row(unit_price="N/A")]))
+
+    assert rejected["unit_price"].iloc[0] == "N/A"
+
+
+def test_duplicates_are_rejected_and_first_copy_kept() -> None:
+    sales = pd.DataFrame([make_row(), make_row(), make_row(product="  Laptop ")])
+
+    valid, rejected = split_sales_records(sales)
+
+    assert len(valid) == 1
+    assert rejected["rejection_reason"].tolist() == ["duplicate_record", "duplicate_record"]
+
+
+def test_invalid_first_copy_does_not_shadow_valid_duplicate() -> None:
+    sales = pd.DataFrame([make_row(unit_price="N/A"), make_row()])
+
+    valid, rejected = split_sales_records(sales)
+
+    assert len(valid) == 1
+    assert rejected["rejection_reason"].tolist() == ["invalid_unit_price"]
+
+
+def test_strings_are_trimmed(raw_sales: pd.DataFrame) -> None:
+    raw_sales.loc[0, "product"] = "  Laptop "
+
+    valid, _ = split_sales_records(raw_sales)
+
+    assert "Laptop" in valid["product"].tolist()
+
+
+def test_validate_data_quality_enforces_rejection_threshold(raw_sales: pd.DataFrame) -> None:
+    raw_sales.loc[0, "quantity"] = "0"
+    valid, rejected = split_sales_records(raw_sales)
+
+    validate_data_quality(valid, rejected, max_rejection_rate=0.5)
+    with pytest.raises(ValueError, match="Rejection rate"):
+        validate_data_quality(valid, rejected, max_rejection_rate=0.1)
+
+
+def test_validate_data_quality_rejects_empty_dataset() -> None:
+    valid, rejected = split_sales_records(pd.DataFrame([make_row(quantity="0")]))
+
+    with pytest.raises(ValueError, match="No valid rows"):
+        validate_data_quality(valid, rejected)
+
+
+def test_build_daily_metrics_aggregates_revenue(raw_sales: pd.DataFrame) -> None:
+    raw_sales.loc[1, "order_id"] = "A-100"  # two lines in the same order
+
+    metrics = build_daily_metrics(clean_sales_data(raw_sales))
+
+    assert metrics["total_orders"].tolist() == [1, 1]
+    assert metrics["total_revenue"].tolist() == [2475.0, 300.0]
+    assert metrics["total_units"].tolist() == [5, 1]

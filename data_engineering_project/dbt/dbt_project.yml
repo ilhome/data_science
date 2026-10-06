@@ -1,0 +1,32 @@
+name: retail_analytics
+version: "1.0.0"
+config-version: 2
+profile: retail_analytics
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+target-path: "target"
+clean-targets: ["target", "dbt_packages"]
+
+models:
+  retail_analytics:
+    staging:
+      +schema: staging
+      +materialized: view
+    marts:
+      core:
+        +schema: marts
+        +materialized: table
+      reporting:
+        +schema: reporting
+        +materialized: table
+
+seeds:
+  retail_analytics:
+    +schema: staging
+    product_catalog:
+      +column_types:
+        product_id: varchar(10)
+        list_price: numeric(10,2)

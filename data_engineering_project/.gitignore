@@ -11,6 +11,7 @@ venv/
 *.parquet
 *.csv
 !data/raw/*.csv
+!dbt/seeds/*.csv
 
 # IDEs
 .vscode/
@@ -26,3 +27,13 @@ htmlcov/
 
 # Docker/local data
 postgres_data/
+
+# dbt
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+dbt/.user.yml
+logs/
+
+# Packaging
+*.egg-info/

@@ -1,0 +1,17 @@
+product_id,product_name,category,brand,list_price
+P001,Laptop,Computers,Northwind,1200.00
+P002,Desktop PC,Computers,Northwind,950.00
+P003,Tablet,Computers,Contoso,480.00
+P004,Monitor,Displays,Fabrikam,300.00
+P005,Ultrawide Monitor,Displays,Fabrikam,620.00
+P006,Keyboard,Accessories,Contoso,80.00
+P007,Mouse,Accessories,Contoso,25.00
+P008,Webcam,Accessories,Litware,95.00
+P009,USB-C Hub,Accessories,Litware,45.00
+P010,Headphones,Audio,Tailspin,150.00
+P011,Bluetooth Speaker,Audio,Tailspin,110.00
+P012,Microphone,Audio,Tailspin,130.00
+P013,External SSD,Storage,Adatum,140.00
+P014,Hard Drive,Storage,Adatum,85.00
+P015,Router,Networking,Proseware,175.00
+P016,Mesh Wi-Fi Kit,Networking,Proseware,320.00

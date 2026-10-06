@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "data-engineering-project"
-version = "0.1.0"
-description = "A production-style starter for a modern data engineering workflow"
+version = "0.2.0"
+description = "End-to-end retail analytics pipeline: Python ETL, PostgreSQL, dbt, and Airflow"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
@@ -15,8 +15,11 @@ dependencies = [
   "sqlalchemy>=2.0.0",
   "psycopg2-binary>=2.9.9",
   "python-dotenv>=1.0.1",
-  "pytest>=8.2.0",
 ]
+
+[project.scripts]
+retail-pipeline = "data_engineering_project.pipeline:main"
+retail-generate-data = "data_engineering_project.generate:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -26,3 +29,13 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+# Keep typing.Optional/Union: the project supports Python 3.9.
+ignore = ["UP006", "UP007", "UP035", "UP045"]

@@ -1,0 +1,34 @@
+version: 2
+
+models:
+  - name: stg_sales
+    description: Typed, renamed order lines from the raw layer.
+    columns:
+      - name: sales_line_key
+        description: Hash of (order_id, product_name).
+        data_tests: [unique, not_null]
+      - name: order_id
+        data_tests: [not_null]
+      - name: order_date
+        data_tests: [not_null]
+      - name: customer_id
+        data_tests: [not_null]
+      - name: product_name
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_product_catalog')
+                field: product_name
+              config:
+                severity: warn
+      - name: quantity
+        data_tests: [is_positive]
+
+  - name: stg_product_catalog
+    description: Product master data maintained as a dbt seed.
+    columns:
+      - name: product_id
+        data_tests: [unique, not_null]
+      - name: product_name
+        data_tests: [unique, not_null]
