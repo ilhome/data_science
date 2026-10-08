@@ -28,7 +28,7 @@ flowchart LR
 
 | Area | What's implemented |
 | --- | --- |
-| **Ingestion** | Reads raw CSV as text, like a landing zone. A seeded generator produces ~15k realistic order lines with seasonality, repeat customers, discounts, and injected dirty records. |
+| **Ingestion** | Reads raw CSV as text, like a landing zone. A seeded generator produces ~30k realistic order lines with seasonality, repeat customers, discounts, and injected dirty records. |
 | **Data quality** | Rule-based validation. Bad rows are **quarantined with a reason** (`invalid_quantity`, `duplicate_record`, …) instead of being dropped silently. The run **fails if the rejection rate is above a threshold** (default 5%). |
 | **Loading** | Each table is replaced inside one transaction, so re-runs are **idempotent** and readers never see a half-loaded table. |
 | **Modeling (dbt)** | Staging → star schema (`fct_sales` + 3 dimensions) → reporting marts. `fct_sales` is **incremental** with a lookback window for late-arriving data. Uses surrogate keys and a zero-filled date spine. |

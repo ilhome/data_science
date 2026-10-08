@@ -40,7 +40,7 @@ def _order_dates(rng: np.random.Generator, start: date, end: date, n_orders: int
 
 
 def generate_sales(
-    n_orders: int = 10_000,
+    n_orders: int = 20_000,
     n_customers: int = 1_500,
     start: date = date(2024, 1, 1),
     end: date = date(2024, 12, 31),
@@ -113,7 +113,7 @@ def write_csv(rows: List[Dict[str, str]], path: Union[str, Path]) -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--orders", type=int, default=10_000)
+    parser.add_argument("--orders", type=int, default=20_000)
     parser.add_argument("--customers", type=int, default=1_500)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--output", type=Path, default=RAW_DATA_PATH)
