@@ -73,6 +73,7 @@ flowchart LR
 | `reporting` | `daily_sales_metrics` | Day: orders, customers, units, revenue, AOV, 7-day average |
 | `reporting` | `monthly_category_revenue` | Month × category: revenue, share of month, MoM growth |
 | `reporting` | `customer_retention_cohorts` | Acquisition month × months since first order |
+| `reporting` | `top_customers` | Top 20 customers by lifetime revenue |
 
 ## Quick start
 

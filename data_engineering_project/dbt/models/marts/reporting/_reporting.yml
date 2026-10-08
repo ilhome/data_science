@@ -20,3 +20,11 @@ models:
       - unique_combination:
           arguments:
             columns: [cohort_month, months_since_first_order]
+
+  - name: top_customers
+    description: Top 20 customers ranked by lifetime revenue.
+    columns:
+      - name: customer_id
+        data_tests: [unique, not_null]
+      - name: revenue_rank
+        data_tests: [unique, not_null]
