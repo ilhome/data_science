@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fx-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  airflow:
+    build:
+      context: .
+      dockerfile: airflow/Dockerfile
+    container_name: fx-airflow
+    command: standalone
+    user: "${AIRFLOW_UID:-50000}:0"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:postgres@postgres:5432/airflow
+      # Local demo only: skip the login screen.
+      AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "True"
+      # Make the pipeline package importable inside tasks.
+      PYTHONPATH: /opt/project/src
+      # Pipeline settings (see .env.example for the full list).
+      DATA_DIR: /opt/project/data
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@postgres:5432/warehouse
+      AIRFLOW_BASE_URL: http://localhost:8080
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - .:/opt/project
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

@@ -1,0 +1,68 @@
+name: pipelines
+
+on:
+  push:
+    paths:
+      - "Pipelines/**"
+      - ".github/workflows/pipelines.yml"
+  pull_request:
+    paths:
+      - "Pipelines/**"
+      - ".github/workflows/pipelines.yml"
+
+defaults:
+  run:
+    working-directory: Pipelines
+
+env:
+  AIRFLOW_VERSION: "3.0.6"
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      AIRFLOW_HOME: ${{ github.workspace }}/Pipelines/airflow_home
+      AIRFLOW__CORE__DAGS_FOLDER: ${{ github.workspace }}/Pipelines/airflow/dags
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      PYTHONPATH: ${{ github.workspace }}/Pipelines/src
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: Pipelines/requirements*.txt
+
+      - name: Install pipeline, dev tools and Airflow
+        run: |
+          pip install -r requirements-dev.txt
+          pip install -e .
+          pip install "apache-airflow==${AIRFLOW_VERSION}" apache-airflow-providers-standard \
+            --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
+
+      - name: Lint
+        run: |
+          ruff check src tests airflow
+          ruff format --check src tests airflow
+
+      - name: Unit tests + DAG integrity tests
+        run: pytest -q
+
+      - name: Run the DAG end to end through Airflow
+        run: |
+          airflow db migrate
+          airflow dags test fx_rates_pipeline 2024-01-15
+
+      - name: Re-run the same day (must stay idempotent)
+        run: |
+          airflow dags test fx_rates_pipeline 2024-01-15
+          python - <<'PY'
+          from datetime import date
+          from pipelines.load import count_rows, get_engine
+          n = count_rows(get_engine(), date(2024, 1, 15), "USD")
+          assert n > 0, "no rows loaded"
+          print(f"fx_rates partition 2024-01-15/USD has {n} rows after two runs")
+          PY
