@@ -10,6 +10,7 @@ import pytest
 pytest.importorskip("airflow.sdk", reason="Airflow is only installed in the Airflow image / CI")
 
 from airflow.models import DagBag  # noqa: E402
+
 from pipelines import alerts  # noqa: E402
 
 DAGS_DIR = Path(__file__).resolve().parents[1] / "airflow" / "dags"

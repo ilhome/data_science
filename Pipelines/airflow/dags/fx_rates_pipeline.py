@@ -17,6 +17,7 @@ from datetime import date, datetime, timedelta
 
 from airflow.exceptions import AirflowFailException
 from airflow.sdk import dag, get_current_context, task
+
 from pipelines import alerts
 
 default_args = {
